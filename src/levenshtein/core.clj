@@ -1,15 +1,18 @@
 (ns levenshtein.core
   (:use	[clojure.contrib.duck-streams :only (read-lines)])
   (:use	[clojure.contrib.map-utils :only (deep-merge-with)])
+  (:use [clojure.contrib.graph :only (lazy-walk)])
   (:use [clojure.test :as t] :reload))
 
 
 (defn reload []
+"A convenience function for reloading and testing the code."
   (load "levenshtein/core")
   (load "levenshtein/test/core")
   (clojure.test/run-tests 'levenshtein.test.core))
 
 (defn front-substrings [word]
+"Generate a list of substring pairs, representing the two pieces that the word would be split into had it be split at each character position, start iterating from the front of the word."
   (let [lastid     (count word)
         inc-lastid (inc lastid)]
    (map #(subs word 0 %) 
@@ -50,6 +53,7 @@
   (into (du-indices word) (c-indices word) ))
 
 (defn generate-index
+"Indexes words based on size and modification fragments, for single-character create, delete and update operations."
   ([word-list]
    (reduce generate-index {} word-list))
   ([deep-hash word]
@@ -76,21 +80,31 @@
          (reduce into '() 
                  (map #(get-in word-index %) (lev-indices word)))))
 
-(defn generate-friend-book [word-index word-list]
+(defn generate-friend-book
+"A utility function that just generates a list of friends based on a list of words."
+  [word-index word-list]
   (map #(friend-list word-index %) word-list)) 
   
 (defn generate-social-network 
+"Returns a map of words to word-friends."
   ([word-index word-list friend-book]
     (apply hash-map (interleave word-list friend-book)))
   ([word-index word-list]
     (let [friend-book (generate-friend-book word-index word-list)]
       (generate-social-network word-index word-list friend-book)))
   ([word-list]
-   "Returns a map of words to word-friends."
     (let [word-index  (generate-index       word-list)
           friend-book (generate-friend-book word-index word-list)] 
       (generate-social-network word-index word-list))))
 
+(defn reformat-graph
+"Reformat the graph for clojure.contrib.graph to be able to operate on it."
+  [social-network]
+  {:neighbors social-network})
+
+(defn size-of-network [g n]
+  (let [formatted-graph (reformat-graph g)]
+    (count (lazy-walk formatted-graph n))))
 
 ;> (fn visit [node]
 ;>   (lazy-cons node (map visit (get-children node)))) 
@@ -98,6 +112,7 @@
 ;(defn friend-network-hash [word-list]
 ;  (let [word-index (generate-index word-list)]
 ;    (map
+
 ; End-game
 ;(def word-file "/home/david/clj/levenshtein/word.list")
 
@@ -120,7 +135,9 @@
 ; Make the whole friend network.
 ; Traverse the friend network starting with "causes" and count how big the network is.
  
-;(doseq [word words]
-;  (prn word))
+(defn print-words [words]
+"Print a list of words to STDOUT."
+  (doseq [word words]
+    (prn word)))
 
 
