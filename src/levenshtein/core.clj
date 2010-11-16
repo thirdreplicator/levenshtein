@@ -4,15 +4,16 @@
   (:use [clojure.contrib.graph :only (lazy-walk)])
   (:use [clojure.test :as t] :reload))
 
+; (use 'levenshtein.core :reload)
 
 (defn reload []
-"A convenience function for reloading and testing the code."
+  "A convenience function for reloading and testing the code."
   (load "levenshtein/core")
   (load "levenshtein/test/core")
   (clojure.test/run-tests 'levenshtein.test.core))
 
 (defn front-substrings [word]
-"Generate a list of substring pairs, representing the two pieces that the word would be split into had it be split at each character position, start iterating from the front of the word."
+  "Generate a list of substring pairs, representing the two pieces that the word would be split into had it be split at each character position, start iterating from the front of the word."
   (let [lastid     (count word)
         inc-lastid (inc lastid)]
    (map #(subs word 0 %) 
@@ -53,7 +54,7 @@
   (into (du-indices word) (c-indices word) ))
 
 (defn generate-index
-"Indexes words based on size and modification fragments, for single-character create, delete and update operations."
+  "Indexes words based on size and modification fragments, for single-character create, delete and update operations."
   ([word-list]
    (reduce generate-index {} word-list))
   ([deep-hash word]
@@ -81,12 +82,12 @@
                  (map #(get-in word-index %) (lev-indices word)))))
 
 (defn generate-friend-book
-"A utility function that just generates a list of friends based on a list of words."
+  "A utility function that just generates a list of friends based on a list of words."
   [word-index word-list]
   (map #(friend-list word-index %) word-list)) 
   
 (defn generate-social-network 
-"Returns a map of words to word-friends."
+  "Returns a map of words to word-friends."
   ([word-index word-list friend-book]
     (apply hash-map (interleave word-list friend-book)))
   ([word-index word-list]
@@ -97,50 +98,54 @@
           friend-book (generate-friend-book word-index word-list)] 
       (generate-social-network word-index word-list))))
 
-(defn reformat-graph
-"Reformat the graph for clojure.contrib.graph to be able to operate on it."
-  [social-network]
-  {:neighbors social-network})
-
-(defn subnetwork [g n]
-  (let [formatted-graph (reformat-graph g)]
-    (lazy-walk formatted-graph n)))
-
 (defn size-of-network [g n]
-  (count (subnetwork g n)))
+  (count (lazy-walk g n)))
 
-;> (fn visit [node]
-;>   (lazy-cons node (map visit (get-children node)))) 
-
-;(defn friend-network-hash [word-list]
-;  (let [word-index (generate-index word-list)]
-;    (map
 
 ; End-game
-;(def word-file "/home/david/clj/levenshtein/word.list")
+(def word-file "/home/david/clj/levenshtein/word.list")
 
-;(def words (read-lines word-file))
+; Change this to a smaller number if you want to run on a subset of the dictionary words.
+(def n-words 264061)
+(def words (take n-words (read-lines word-file)))
 
-; Divide 250k words into 4 chunks
-;(def word-partition (partition-all 66020 l/words)) 
+; Divide 264,000 words into 4 chunks
+(def word-partition 
+  (let [partition-size (Math/ceil (/ n-words 4))]
+    (partition-all partition-size words)))
 
-; Parallel map-reduce each chunk.
-;(def word-chunks (pmap #(reduce generate-index {} %) word-parition))
+(prn "***pmap generate-index partitions***")
 
-; Then, deep-merge them together.
-;(def word-index 
-;   (reduce #(deep-merge-with into %1 %2) {} (reduce generate-index {} words))
+(def word-index-atom (atom {}))
+; (def word-index-ref (ref {}))
+(def word-index {})  
+(def social-graph-atom (atom {}))
 
-; Index the whole word list.
-;  write friending indexes.
-; generate two words friends
-;
-; Make the whole friend network.
-; Traverse the friend network starting with "causes" and count how big the network is.
+(defn generate-index-atom
+  ([word-list]
+    (doseq [word word-list]
+      (doseq [triplet (cdu-indices word)]
+        ; 50% faster than ref version
+        (swap! word-index-atom update-in triplet conj word))))) 
+
+;        (dosync (commute word-index-ref update-in triplet conj word)))))) ; ref version
+
+(defn map-words-to-friends
+  [word-list]
+    (doseq [word word-list]
+      (let [index            [:neighbors word]
+            list-of-friends  (friend-list @word-index-atom word)]
+        (swap! social-graph-atom update-in index into list-of-friends))))
+
+; 1. Create word-index-atom.
+(pmap #(generate-index-atom %) word-partition)
+
+; 2. Create friend book (a list of friend lists).
+(pmap #(map-words-to-friends %) word-partition)
+
+; 3. Count the number of members in the "causes" social network.... call "print-result"  after the CPU calms down.
+
+(defn print-result []
+  (prn (str "The size of the \"causes\" social network is: " 
+            (count (clojure.contrib.graph/lazy-walk @social-graph-atom "causes")))))
  
-(defn print-words [words]
-"Print a list of words to STDOUT."
-  (doseq [word words]
-    (prn word)))
-
-
