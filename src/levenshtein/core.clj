@@ -101,7 +101,6 @@
 (defn size-of-network [g n]
   (count (lazy-walk g n)))
 
-
 ; End-game
 (def word-file "/home/david/clj/levenshtein/word.list")
 
