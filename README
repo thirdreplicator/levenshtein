@@ -1,3 +1,11 @@
+Prerequisites:
+  A computer with 1 or more CPUs.  Preferably more.
+  Java 1.6
+  leiningen (https://github.com/technomancy/leiningen)
+
+
+export JAVA_OPTS=-Xmx2048m
+
 lein repl
 => (use 'levenshtein/core)
 
