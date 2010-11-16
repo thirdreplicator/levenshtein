@@ -102,9 +102,12 @@
   [social-network]
   {:neighbors social-network})
 
-(defn size-of-network [g n]
+(defn subnetwork [g n]
   (let [formatted-graph (reformat-graph g)]
-    (count (lazy-walk formatted-graph n))))
+    (lazy-walk formatted-graph n)))
+
+(defn size-of-network [g n]
+  (count (subnetwork g n)))
 
 ;> (fn visit [node]
 ;>   (lazy-cons node (map visit (get-children node)))) 

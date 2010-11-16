@@ -123,9 +123,9 @@
 
 (deftest test-size-of-network
   (let [network (generate-social-network '("man" "can" "cans" "tan" "ton" "stan" "dog"
-                                           "dot" "rot" "hot"))]
+                                           "dot" "cot" "hot"))]
     (is (= 4
-           (count (subnetwork network "dog"))))
+           (size-of-network network "dog")))
     (is (= 6
-           (count (subnetwork network "man"))))))
+           (size-of-network network "man")))))
 
