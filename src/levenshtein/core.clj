@@ -137,10 +137,12 @@
         (swap! social-graph-atom update-in index into list-of-friends))))
 
 ; 1. Create word-index-atom.
-(pmap #(generate-index-atom %) word-partition)
+(defn step1 []
+  (pmap #(generate-index-atom %) word-partition))
 
 ; 2. Create friend book (a list of friend lists).
-(pmap #(map-words-to-friends %) word-partition)
+(defn step2 []
+  (pmap #(map-words-to-friends %) word-partition))
 
 ; 3. Count the number of members in the "causes" social network.... call "print-result"  after the CPU calms down.
 

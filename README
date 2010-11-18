@@ -8,11 +8,12 @@ export JAVA_OPTS=-Xmx2048m
 
 lein repl
 => (use 'levenshtein/core)
-
+=> (step1)
 . . . . Look at your CPU activity.  After it's done, type this:
-
+=> (step2)
+. . . . Look at your CPU activity.  After it's done, type this:
 => (print-result)
 
-The size of the causes social network is: 31237
+The size of the causes social network is: 78,482
 
 Distributed under the Eclipse Public License, the same as Clojure.
